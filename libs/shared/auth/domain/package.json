@@ -1,0 +1,11 @@
+{
+  "name": "@featstack/shared-auth-domain",
+  "version": "0.0.0",
+  "private": true,
+  "type": "commonjs",
+  "main": "./src/index.js",
+  "types": "./src/index.d.ts",
+  "peerDependencies": {
+    "tslib": "^2.3.0"
+  }
+}

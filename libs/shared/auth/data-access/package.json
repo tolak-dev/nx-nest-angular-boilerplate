@@ -1,0 +1,17 @@
+{
+  "name": "@featstack/shared-auth-data-access",
+  "version": "0.0.0",
+  "private": true,
+  "type": "commonjs",
+  "main": "./src/index.js",
+  "types": "./src/index.d.ts",
+  "peerDependencies": {
+    "@featstack/shared-auth-domain": "*",
+    "@featstack/shared-environments": "*",
+    "@angular/core": "~20.1.0",
+    "@angular/router": "~20.1.0",
+    "rxjs": "^7.8.0",
+    "@angular/common": "~20.1.0",
+    "tslib": "^2.3.0"
+  }
+}

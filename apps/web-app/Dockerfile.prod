@@ -1,0 +1,11 @@
+# Stage 1: build Angular app
+FROM node:20 AS builder
+WORKDIR /app
+COPY . .
+RUN npm ci --legacy-peer-deps
+RUN npx nx build web-app --configuration=production
+
+# Stage 2: Serve via Nginx
+FROM nginx:alpine
+COPY --from=builder /app/dist/apps/web-app/browser /usr/share/nginx/html
+COPY docker/featstack/prod/nginx/web-app.conf /etc/nginx/conf.d/default.conf

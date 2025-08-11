@@ -1,0 +1,19 @@
+{
+  "name": "shared-auth-domain",
+  "$schema": "../../../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "libs/shared/auth/domain/src",
+  "projectType": "library",
+  "tags": ["scope:shared type:domain"],
+  "targets": {
+    "build": {
+      "executor": "@nx/js:tsc",
+      "outputs": ["{options.outputPath}"],
+      "options": {
+        "outputPath": "dist/libs/shared/auth/domain",
+        "main": "libs/shared/auth/domain/src/index.ts",
+        "tsConfig": "libs/shared/auth/domain/tsconfig.lib.json",
+        "assets": ["libs/shared/auth/domain/*.md"]
+      }
+    }
+  }
+}

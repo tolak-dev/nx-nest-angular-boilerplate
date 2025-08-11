@@ -1,0 +1,89 @@
+{
+  "name": "web-app",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "projectType": "application",
+  "prefix": "app",
+  "sourceRoot": "apps/web-app/src",
+  "tags": ["type:app scope:web-app"],
+  "targets": {
+    "build": {
+      "executor": "@nx/angular:application",
+      "outputs": ["{options.outputPath}"],
+      "options": {
+        "outputPath": "dist/apps/web-app",
+        "browser": "apps/web-app/src/main.ts",
+        "polyfills": ["zone.js"],
+        "tsConfig": "apps/web-app/tsconfig.app.json",
+        "inlineStyleLanguage": "scss",
+        "assets": [
+          {
+            "glob": "**/*",
+            "input": "apps/web-app/public"
+          }
+        ],
+        "styles": ["apps/web-app/src/app/app.scss"]
+      },
+      "configurations": {
+        "production": {
+          "define": {
+            "process.env.API_BASE_URL": "\"https://featstack.com/api\""
+          },
+          "fileReplacements": [
+            {
+              "replace": "libs/shared/environments/src/lib/environment.ts",
+              "with": "libs/shared/environments/src/lib/environment.prod.ts"
+            }
+          ],
+          "budgets": [
+            {
+              "type": "initial",
+              "maximumWarning": "500kb",
+              "maximumError": "1mb"
+            },
+            {
+              "type": "anyComponentStyle",
+              "maximumWarning": "64kb",
+              "maximumError": "128kb"
+            }
+          ],
+          "outputHashing": "all"
+        },
+        "staging": {
+          "define": {
+            "process.env.API_BASE_URL": "\"https://staging.featstack.com/api\""
+          },
+          "optimization": true,
+          "outputHashing": "all"
+        },
+        "development": {
+          "define": {
+            "process.env.API_BASE_URL": "\"http://localhost:4200/api\""
+          },
+          "optimization": false,
+          "extractLicenses": false,
+          "sourceMap": true
+        }
+      },
+      "defaultConfiguration": "production"
+    },
+    "serve": {
+      "continuous": true,
+      "executor": "@nx/angular:dev-server",
+      "configurations": {
+        "production": {
+          "buildTarget": "web-app:build:production"
+        },
+        "staging": {
+          "buildTarget": "web-app:build:staging"
+        },
+        "development": {
+          "buildTarget": "web-app:build:development"
+        }
+      },
+      "defaultConfiguration": "development",
+      "options": {
+        "proxyConfig": "apps/web-app/proxy.conf.json"
+      }
+    }
+  }
+}

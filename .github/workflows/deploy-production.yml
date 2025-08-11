@@ -1,0 +1,130 @@
+name: Production Deployment
+
+on:
+  repository_dispatch:
+    types: [deploy-production]
+  workflow_dispatch:
+    inputs:
+      apiVersion:
+        description: 'API version (e.g. 0.2.1-dev.14)'
+        required: true
+      webAppVersion:
+        description: 'Web app version (e.g. 0.2.2-dev.11)'
+        required: true
+
+env:
+  SSH_HOST: ${{ secrets.HETZNER_SSH_HOST }}
+  SSH_USER: ${{ secrets.HETZNER_USER }}
+  SSH_KEY: ${{ secrets.HETZNER_SSH_KEY }}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: Production
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Determine Deployment Versions
+        id: version
+        run: |
+          echo "Resolving deployment versions..."
+          if [[ "$GITHUB_EVENT_NAME" == "workflow_dispatch" ]]; then
+            echo "Using manual dispatch inputs"
+            API_VERSION="${{ github.event.inputs.apiVersion }}"
+            WEB_APP_VERSION="${{ github.event.inputs.webAppVersion }}"
+          elif [[ "$GITHUB_EVENT_NAME" == "repository_dispatch" ]]; then
+            echo "Using repository_dispatch payload"
+            API_VERSION="${{ github.event.client_payload.apiVersion }}"
+            WEB_APP_VERSION="${{ github.event.client_payload.webAppVersion }}"
+          else
+            echo "Missing version info. Please trigger manually or via repository_dispatch." >&2
+            exit 1
+          fi
+
+          if [[ -z "$API_VERSION" || -z "$WEB_APP_VERSION" ]]; then
+            echo "One or both versions are empty:"
+            echo "  API_VERSION: '$API_VERSION'"
+            echo "  WEB_APP_VERSION: '$WEB_APP_VERSION'"
+            exit 1
+          fi
+
+          echo "Versions resolved:"
+          echo "  API_VERSION: $API_VERSION"
+          echo "  WEB_APP_VERSION: $WEB_APP_VERSION"
+
+          echo "API_VERSION=$API_VERSION" >> $GITHUB_ENV
+          echo "WEB_APP_VERSION=$WEB_APP_VERSION" >> $GITHUB_ENV
+
+      - name: Upload Docker Compose files
+        uses: appleboy/scp-action@v1.0.0
+        with:
+          host: ${{ env.SSH_HOST }}
+          username: ${{ env.SSH_USER }}
+          key: ${{ env.SSH_KEY }}
+          port: 22
+          source: docker/featstack/prod/
+          target: /srv/featstack/
+          strip_components: 3
+
+      - name: Deploy to Production Server
+        uses: appleboy/ssh-action@v1.2.2
+        env:
+          API_VERSION: ${{ env.API_VERSION }}
+          WEB_APP_VERSION: ${{ env.WEB_APP_VERSION }}
+        with:
+          host: ${{ env.SSH_HOST }}
+          username: ${{ env.SSH_USER }}
+          key: ${{ env.SSH_KEY }}
+          port: 22
+          envs: API_VERSION,WEB_APP_VERSION
+          script: |
+
+            APP_DIR="/srv/featstack"
+            COMPOSE_FILE="docker-compose.yml"
+            ENV_FILE=".env"
+
+            echo "🚀 Auto-deploying to Production"
+            echo "API Version: $API_VERSION"
+            echo "WebApp Version: $WEB_APP_VERSION"
+            echo "Trigger: ${{ github.event_name }}"
+            echo "Branch: ${{ github.ref_name }}"
+
+            cd "${APP_DIR}"
+
+            echo "Writing .env file"
+            cat > .env << EOF
+            API_VERSION=${API_VERSION}
+            WEB_APP_VERSION=${WEB_APP_VERSION}
+            GH_USERNAME=${{ github.repository_owner }}
+            DATABASE_URL=${{ secrets.DATABASE_URL }}
+            POSTGRES_DB=${{ secrets.POSTGRES_DB }}
+            POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}
+            POSTGRES_USER=${{ secrets.POSTGRES_USER }}
+            SENDGRID_API_KEY=${{ secrets.SENDGRID_API_KEY }}
+            EMAIL_FROM=${{ secrets.EMAIL_FROM }}
+            SENDGRID_EMAIL_APP_NAME=${{ vars.SENDGRID_EMAIL_APP_NAME }}
+            DISABLE_REGISTER=${{ secrets.DISABLE_REGISTER }}
+            JWT_REFRESH_SECRET=${{ secrets.JWT_REFRESH_SECRET }}
+            JWT_SECRET=${{ secrets.JWT_SECRET }}
+            CERTBOT_EMAIL=${{ secrets.CERTBOT_EMAIL }}
+            API_BASE_URL=${{ secrets.API_BASE_URL }}
+            FRONTEND_URL=${{ secrets.FRONTEND_URL }}
+            EOF
+
+            echo "Docker deployment"
+            docker --version
+
+            echo "Stopping existing containers"
+            docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" down || echo "Nothing to stop"
+
+            echo "Starting new containers"
+            docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" up -d --remove-orphans
+
+            echo "Container status"
+            docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" ps
+
+            echo "Successfully deployed to Production!"
+            echo "API Version: ${API_VERSION}"
+            echo "WebApp Version: ${WEB_APP_VERSION}"

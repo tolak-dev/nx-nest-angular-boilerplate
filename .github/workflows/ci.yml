@@ -1,0 +1,210 @@
+name: CI, Release Pipeline
+
+on:
+  push:
+    branches: [dev, staging, master]
+  pull_request:
+    branches: [dev, staging, master]
+
+permissions:
+  contents: write
+  actions: read
+  id-token: write
+
+jobs:
+  ci:
+    name: Lint, Build, Typecheck
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+          # check-latest: true
+          cache: 'npm'
+
+      - run: npm ci --legacy-peer-deps
+      - run: npx prisma generate --config=libs/shared/auth/infrastructure/prisma.config.ts
+
+      - uses: nrwl/nx-set-shas@v4
+
+      - name: Lint
+        run: npx nx affected -t lint --parallel=5 --skip-nx-cache
+
+      - name: Typecheck
+        run: npx nx affected -t typecheck --parallel=5 --skip-nx-cache
+
+      - name: Build
+        run: npx nx affected -t build --parallel=5 --skip-nx-cache --configuration=production
+
+      - name: Fix CI
+        if: always()
+        run: npx nx fix-ci
+
+  release:
+    name: Nx Release, Migrate, Docker Build & Push
+    runs-on: ubuntu-latest
+    needs: ci
+    if: github.event_name == 'push' && success()
+    outputs:
+      api-version: ${{ steps.extract-versions.outputs.api-version }}
+      webapp-version: ${{ steps.extract-versions.outputs.webapp-version }}
+
+    environment: ${{ github.ref_name == 'master' && 'Production' || github.ref_name == 'staging' && 'Staging' || 'Development' }}
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+          ref: ${{ github.ref }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+          # check-latest: true
+          cache: 'npm'
+
+      - run: npm ci --legacy-peer-deps
+
+      - name: Validate & Generate Prisma
+        run: |
+          npx prisma validate --config=libs/shared/auth/infrastructure/prisma.config.ts
+          npx prisma generate --config=libs/shared/auth/infrastructure/prisma.config.ts
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+
+      - uses: nrwl/nx-set-shas@v4
+
+      - name: Git Setup
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - id: set-version
+        name: Run Nx Release
+        run: |
+          BRANCH="${GITHUB_REF##*/}"
+          echo "Detected branch: $BRANCH"
+
+          case "$BRANCH" in
+            dev)
+              npx nx release version --git-commit --git-tag --git-push --preid=dev --first-release
+              ;;
+            staging)
+              npx nx release version  --git-commit --git-tag --git-push --preid=rc --first-release
+              ;;
+            master)
+              npx nx release version --specifier patch --git-commit --git-tag --git-push --first-release
+              ;;
+            *)
+              echo "Unknown branch: $BRANCH" && exit 1
+              ;;
+          esac
+
+      - id: extract-versions
+        name: Extract App Versions
+        run: |
+          echo "Extracting versions from git tags..."
+
+          # Get the latest tags for each app using your exact tag structure
+          API_VERSION=$(git tag -l "release/api/*" --sort=-v:refname | head -n 1 | cut -d'/' -f3 || echo "latest")
+          WEBAPP_VERSION=$(git tag -l "release/web-app/*" --sort=-v:refname | head -n 1 | cut -d'/' -f3 || echo "latest")
+
+          echo "Extracted versions:"
+          echo "  API Version: $API_VERSION"
+          echo "  WebApp Version: $WEBAPP_VERSION"
+
+          # Validate that we found versions
+          if [[ "$API_VERSION" == "latest" ]]; then
+            echo "No API tags found matching 'release/api/*'"
+          fi
+          if [[ "$WEBAPP_VERSION" == "latest" ]]; then
+            echo "No web-app tags found matching 'release/web-app/*'"
+          fi
+
+          # Set outputs for use in other jobs
+          echo "api-version=$API_VERSION" >> "$GITHUB_OUTPUT"
+          echo "webapp-version=$WEBAPP_VERSION" >> "$GITHUB_OUTPUT"
+
+      # - name: Create changelog
+      #   run: |
+      #     # generates/updates project CHANGELOG.md files based on latest tags
+      #     npx nx release changelog --git-commit --git-push --first-release
+
+      - id: set-env-name
+        name: Set Docker Build Environment
+        run: |
+          case "${GITHUB_REF##*/}" in
+            dev)
+              echo "env_tag=dev" >> "$GITHUB_OUTPUT"
+              echo "docker_env=dev" >> "$GITHUB_OUTPUT"
+              ;;
+            staging)
+              echo "env_tag=rc" >> "$GITHUB_OUTPUT"
+              echo "docker_env=staging" >> "$GITHUB_OUTPUT"
+              ;;
+            master)
+              echo "env_tag=" >> "$GITHUB_OUTPUT"
+              echo "docker_env=prod" >> "$GITHUB_OUTPUT"
+              ;;
+            *)
+              echo "Unknown branch" && exit 1
+              ;;
+          esac
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GHCR_PAT }}
+
+      - name: Build & Push Docker Images
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          ENV_TAG="${{ steps.set-env-name.outputs.env_tag }}"
+          DOCKER_ENV="${{ steps.set-env-name.outputs.docker_env }}"
+
+          echo "Getting affected apps..."
+          AFFECTED_APPS=$(npx nx show projects --affected --type=app | tr -d '\r')
+          echo "Affected apps: $AFFECTED_APPS"
+
+          for APP in $AFFECTED_APPS; do
+            VERSION=$(git tag -l "release/${APP}/*" --sort=-v:refname | head -n 1 | cut -d'/' -f3)
+            DOCKERFILE="apps/$APP/Dockerfile.${DOCKER_ENV}"
+
+            if [ ! -f "$DOCKERFILE" ]; then
+              echo " Skipping $APP — no Dockerfile at $DOCKERFILE"
+              continue
+            fi
+
+            TAG="$VERSION"
+            IMAGE="ghcr.io/${{ github.repository_owner }}/$APP:$TAG"
+
+            echo "Building image: $IMAGE"
+            docker build \
+              --build-arg DATABASE_URL="$DATABASE_URL" \
+              -t "$IMAGE" \
+              -f "$DOCKERFILE" .
+
+            echo "Pushing image: $IMAGE"
+            docker push "$IMAGE"
+          done
+
+      - name: Trigger Production Deployment
+        if: github.ref == 'refs/heads/master'
+        uses: peter-evans/repository-dispatch@v3
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          event-type: deploy-production
+          client-payload: >
+            {
+              "apiVersion": "${{ steps.extract-versions.outputs.api-version }}",
+              "webAppVersion": "${{ steps.extract-versions.outputs.webapp-version }}"
+            }

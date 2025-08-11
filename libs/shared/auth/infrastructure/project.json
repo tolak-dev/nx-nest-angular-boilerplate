@@ -1,0 +1,19 @@
+{
+  "name": "shared-auth-infrastructure",
+  "$schema": "../../../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "libs/shared/auth/infrastructure/src",
+  "projectType": "library",
+  "tags": ["scope:shared type:infrastructure"],
+  "targets": {
+    "build": {
+      "executor": "@nx/js:tsc",
+      "outputs": ["{options.outputPath}"],
+      "options": {
+        "outputPath": "dist/libs/shared/auth/infrastructure",
+        "main": "libs/shared/auth/infrastructure/src/index.ts",
+        "tsConfig": "libs/shared/auth/infrastructure/tsconfig.lib.json",
+        "assets": ["libs/shared/auth/infrastructure/*.md"]
+      }
+    }
+  }
+}

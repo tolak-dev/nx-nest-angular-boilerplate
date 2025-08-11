@@ -1,0 +1,9 @@
+{
+  "name": "shared-notifications",
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "libs/shared/notifications/src",
+  "projectType": "library",
+  "tags": ["scope:shared type:api"],
+  "// targets": "to see all targets run: nx show project shared-notifications --web",
+  "targets": {}
+}

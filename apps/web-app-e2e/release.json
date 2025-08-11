@@ -1,0 +1,8 @@
+{
+  "$schema": "https://json.schemastore.org/nx-release",
+  "projects": {
+    "web-app-e2e": {
+      "version": false
+    }
+  }
+}

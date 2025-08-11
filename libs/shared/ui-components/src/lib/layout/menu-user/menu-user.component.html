@@ -1,0 +1,28 @@
+<ng-container *ngIf="(isAuthenticated$ | async) === false">
+  <div class="flex gap-4 items-center justify-center">
+    <a
+      routerLink="/login"
+      class="cursor-pointer text-sm border-0 bg-white text-orange-600 px-3 py-1 rounded-xl font-medium">
+      Login
+    </a>
+  </div>
+</ng-container>
+
+<ng-container *ngIf="(isAuthenticated$ | async) === true">
+  <div class="flex gap-4 items-center justify-center">
+    <!-- <div class="flex items-center space-x-3">
+      <span class="text-sm text-gray-700 font-medium">Hi, {{ (user$ | async)?.username?.substring(0, 2)?.toUpperCase() }}</span>
+    </div> -->
+    <a
+      routerLink="/profile"
+      routerLinkActive="text-white"
+      class="relative text-gray-200 hover:text-white transition-colors duration-300">
+      Profile
+    </a>
+    <button
+      class="cursor-pointer text-sm border-0 bg-gradient-to-r text-gray-900 bg-white px-3 py-1 rounded-xl"
+      (click)="logout()">
+      Logout
+    </button>
+  </div>
+</ng-container>

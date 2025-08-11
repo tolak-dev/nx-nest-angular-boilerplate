@@ -1,0 +1,22 @@
+#!/bin/sh
+
+branch="$(git rev-parse --abbrev-ref HEAD)"
+
+# Allow mainline branches
+if echo "$branch" | grep -Eq '^(main|master|dev|staging)$'; then
+  exit 0
+fi
+
+# Enforce naming for feature/dev branches
+if ! echo "$branch" | grep -Eq '^(feature|fix|chore|release|hotfix|bugfix)/[a-z0-9._-]+$'; then
+  echo ""
+  echo "❌ Invalid branch name: \"$branch\""
+  echo "Branch names must match:"
+  echo "  feature/<name>, fix/<name>, chore/<name>, hotfix/<name>, bugfix/<name>, release/<name>"
+  echo ""
+  echo "Examples:"
+  echo "  ✅ feature/login-page"
+  echo "  ✅ fix/forgot-password-bug"
+  echo ""
+  exit 1
+fi

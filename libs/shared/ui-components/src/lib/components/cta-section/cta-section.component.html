@@ -1,0 +1,26 @@
+<div class="bg-orange-600 overflow-hidden min-h-[100vh]">
+  <div class="mx-auto max-w-7xl sm:px-6 lg:px-8">
+    <div class="relative isolate lg:flex items-center">
+      <!-- Text Content -->
+      <div class="mx-auto max-w-md text-center lg:mx-0 lg:flex-auto py-8 lg:py-16 lg:text-left mt-10 md:my-0 px-2">
+        <h2 class="text-3xl font-semibold tracking-tight text-balance text-white sm:text-4xl">
+          {{ title }}
+        </h2>
+        <p class="mt-6 text-lg/8 text-pretty text-gray-300">
+          {{ description }}
+        </p>
+        <div class="mt-10 flex items-center justify-center gap-x-6 lg:justify-start">
+          <a [routerLink]="primaryCtaLink"
+            class="rounded-md bg-white px-3.5 py-2.5 text-sm font-semibold text-gray-900 shadow-xs hover:bg-gray-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white">
+            {{ primaryCtaLabel }}
+          </a>
+        </div>
+      </div>
+      <!-- Image -->
+      <div class="relative w-auto md:w-200  px-4 lg:px-0 lg:mt-0">
+        <img [src]="imageSrc" [alt]="imageAlt"
+          class="md:relative w-full top-auto md:top-0 left-0 md:left-20 max-w-none" />
+      </div>
+    </div>
+  </div>
+</div>

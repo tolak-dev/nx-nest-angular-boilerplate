@@ -1,0 +1,19 @@
+{
+  "name": "shared-auth-data-access",
+  "$schema": "../../../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "libs/shared/auth/data-access/src",
+  "projectType": "library",
+  "tags": ["scope:shared type:data-access"],
+  "targets": {
+    "build": {
+      "executor": "@nx/js:tsc",
+      "outputs": ["{options.outputPath}"],
+      "options": {
+        "outputPath": "dist/libs/shared/auth/data-access",
+        "main": "libs/shared/auth/data-access/src/index.ts",
+        "tsConfig": "libs/shared/auth/data-access/tsconfig.lib.json",
+        "assets": ["libs/shared/auth/data-access/*.md"]
+      }
+    }
+  }
+}

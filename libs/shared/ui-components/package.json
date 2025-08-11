@@ -1,0 +1,11 @@
+{
+  "name": "@featstack/shared-ui-components",
+  "version": "0.0.0",
+  "peerDependencies": {
+    "@featstack/shared-auth-data-access": "*",
+    "@angular/core": "~20.1.0",
+    "@angular/common": "~20.1.0",
+    "@angular/router": "~20.1.0"
+  },
+  "sideEffects": false
+}

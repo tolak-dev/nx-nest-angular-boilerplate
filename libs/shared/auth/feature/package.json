@@ -1,0 +1,8 @@
+{
+  "name": "@featstack/shared-auth-feature",
+  "version": "0.0.0",
+  "peerDependencies": {
+    "@featstack/shared-auth-ui": "*",
+    "@angular/router": "~20.1.0"
+  }
+}
