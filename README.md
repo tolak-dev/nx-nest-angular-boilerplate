@@ -1,8 +1,10 @@
 # NX Nest Angular Boilerplate
 
+[🔗 Live Preview: featstack.com](https://featstack.com)
+
 A modern full-stack application boilerplate built with NX monorepo, NestJS backend, Angular frontend, and comprehensive DevOps tooling.
 
-## 🚀 Tech Stack
+## Tech Stack
 
 ### Frontend
 - **Angular 20** - Modern web framework
@@ -16,7 +18,7 @@ A modern full-stack application boilerplate built with NX monorepo, NestJS backe
 - **Passport.js** - Authentication middleware
 
 ### Database & Infrastructure
-- **PostgreSQL** - Robust relational database
+- **PostgreSQL** - Relational database
 - **Docker & Docker Compose** - Containerization
 - **Nginx** - Reverse proxy and load balancer
 - **Terraform** - Infrastructure as Code
@@ -28,7 +30,7 @@ A modern full-stack application boilerplate built with NX monorepo, NestJS backe
 - **ESLint & Prettier** - Code quality and formatting
 - **Husky & lint-staged** - Pre-commit hooks
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 nx-nest-angular-boilerplate/
@@ -60,7 +62,7 @@ nx-nest-angular-boilerplate/
     └── modules/
 ```
 
-## 🛠️ Getting Started
+## Getting Started
 
 ### Prerequisites
 
@@ -155,7 +157,7 @@ nx run-many --target=serve --projects=api,web-app --parallel
    npx prisma db seed
    ```
 
-## 📚 Available Scripts
+## Available Scripts
 
 ### Development
 - `npm run start:all` - Start all services with Docker
@@ -205,7 +207,7 @@ nx run-many --target=serve --projects=api,web-app --parallel
 - Automated testing pipeline ready
 
 
-## 🐳 Docker Deployment
+##  Docker Deployment
 
 ### Local Development
 ```bash
@@ -220,7 +222,7 @@ docker-compose up --build
 ```
 
 
-## 🧪 Testing
+##  Testing
 
 ### Unit Tests
 ```bash
@@ -241,20 +243,4 @@ nx e2e web-app-e2e
 nx e2e api-e2e
 ```
 
-## 📖 Documentation
-
-- **API Documentation**: Available at `/api/docs` when running the API
-- **Storybook**: Run `nx storybook shared-ui-components` for component documentation
-- **Architecture**: See individual README and CHANGELOG files in each library
-
-## 🤝 Contributing
-
-1. -
-
-
-## 📝 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
----
 
